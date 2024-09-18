@@ -1238,19 +1238,6 @@ static int Lpb_load(lua_State *L) {
     return 2;
 }
 
-static int Lpb_load_unsafe(lua_State *L) {
-    lpb_State *LS = lpb_lstate(L);
-    const char *data = (const char *)lua_touserdata(L, 1);
-    size_t size = (size_t)luaL_checkinteger(L, 2);
-    pb_Slice s = pb_lslice(data, size);
-    int r;
-    if (data == NULL) lpb_typeerror(L, 1, "userdata");
-    r = pb_load(&LS->local, &s);
-    lua_pushboolean(L, r == PB_OK);
-    lua_pushinteger(L, pb_pos(s)+1);
-    return 2;
-}
-
 static int Lpb_loadfile(lua_State *L) {
     lpb_State *LS = lpb_lstate(L);
     const char *filename = luaL_checkstring(L, 1);
@@ -2149,53 +2136,6 @@ LUALIB_API int luaopen_pb(lua_State *L) {
     luaL_newlib(L, libs);
     return 1;
 }
-
-static int Lpb_decode_unsafe(lua_State *L) {
-    const char *data = (const char *)lua_touserdata(L, 2);
-    size_t size = (size_t)luaL_checkinteger(L, 3);
-    if (data == NULL) lpb_typeerror(L, 2, "userdata");
-    return lpbD_decode(L, pb_lslice(data, size), 4);
-}
-
-static int Lpb_slice_unsafe(lua_State *L) {
-    const char *data = (const char *)lua_touserdata(L, 1);
-    size_t size = (size_t)luaL_checkinteger(L, 2);
-    if (data == NULL) lpb_typeerror(L, 1, "userdata");
-    return lpb_newslice(L, data, size);
-}
-
-static int Lpb_touserdata(lua_State *L) {
-    pb_Slice s = lpb_toslice(L, 1);
-    lua_pushlightuserdata(L, (void*)s.p);
-    lua_pushinteger(L, pb_len(s));
-    return 2;
-}
-
-static int Lpb_use(lua_State *L) {
-    const char *opts[] = { "global", "local", NULL };
-    lpb_State *LS = lpb_lstate(L);
-    const pb_State *GS = global_state;
-    switch (luaL_checkoption(L, 1, NULL, opts)) {
-    case 0: if (GS) LS->state = GS; break;
-    case 1: LS->state = &LS->local; break;
-    }
-    lua_pushboolean(L, GS != NULL);
-    return 1;
-}
-
-LUALIB_API int luaopen_pb_unsafe(lua_State *L) {
-    luaL_Reg libs[] = {
-        { "load",       Lpb_load_unsafe   },
-        { "decode",     Lpb_decode_unsafe },
-        { "slice",      Lpb_slice_unsafe  },
-        { "touserdata", Lpb_touserdata    },
-        { "use",        Lpb_use           },
-        { NULL, NULL }
-    };
-    luaL_newlib(L, libs);
-    return 1;
-}
-
 
 PB_NS_END
 

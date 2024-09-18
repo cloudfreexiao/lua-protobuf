@@ -1411,39 +1411,6 @@ function _G.test_encode_hook()
    end)
 end
 
-function _G.test_unsafe()
-   local unsafe = require "pb.unsafe"
-   assert(type(unsafe.decode) == "function")
-   assert(type(unsafe.use) == "function")
-   fail("userdata expected, got boolean",
-      function() unsafe.load(true, 1)
-   end)
-   fail("userdata expected, got boolean",
-      function() unsafe.decode("", true, 1)
-   end)
-   fail("userdata expected, got boolean",
-      function() unsafe.slice(true, 1)
-   end)
-   local s, len = unsafe.touserdata(io.stdin, 0)
-   -- s is a null pointer!
-   fail("userdata expected, got userdata",
-      function() unsafe.slice(s, len)
-   end)
-   check_load [[
-   message TestType {
-   }
-   ]]
-   s, len = unsafe.touserdata("", 0)
-   eq(type(s), "userdata")
-   eq(len, 0)
-   table_eq(unsafe.decode("TestType", s, len), {})
-   table_eq(pb.decode("TestType", unsafe.slice(s, len)), {})
-   table_eq({unsafe.load(s, len)}, {true , 1})
-   pb.clear "TestType"
-   -- eq((unsafe.use "global"), true)
-   -- eq((unsafe.use "local"), true)
-end
-
 function _G.test_order()
    withstate(function()
    protoc.reload()
