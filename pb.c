@@ -204,7 +204,7 @@ LUALIB_API lpb_State *lpb_lstate(lua_State *L) {
         LS->defs_index = LUA_NOREF;
         LS->enc_hooks_index = LUA_NOREF;
         LS->dec_hooks_index = LUA_NOREF;
-        LS->state = &LS->local;
+        LS->state = (NULL != global_state ? global_state : &LS->local);
         pb_init(&LS->local);
         pb_initbuffer(&LS->buffer);
         luaL_setmetatable(L, PB_STATE);
@@ -1233,7 +1233,6 @@ static int Lpb_load(lua_State *L) {
     lpb_State *LS = lpb_lstate(L);
     pb_Slice s = lpb_checkslice(L, 1);
     int r = pb_load(&LS->local, &s);
-    if (r == PB_OK) global_state = &LS->local;
     lua_pushboolean(L, r == PB_OK);
     lua_pushinteger(L, pb_pos(s)+1);
     return 2;
@@ -1247,7 +1246,6 @@ static int Lpb_load_unsafe(lua_State *L) {
     int r;
     if (data == NULL) lpb_typeerror(L, 1, "userdata");
     r = pb_load(&LS->local, &s);
-    if (r == PB_OK) global_state = &LS->local;
     lua_pushboolean(L, r == PB_OK);
     lua_pushinteger(L, pb_pos(s)+1);
     return 2;
@@ -1273,7 +1271,6 @@ static int Lpb_loadfile(lua_State *L) {
     fclose(fp);
     s = pb_result(&b);
     ret = pb_load(&LS->local, &s);
-    if (ret == PB_OK) global_state = &LS->local;
     pb_resetbuffer(&b);
     lua_pushboolean(L, ret == PB_OK);
     lua_pushinteger(L, pb_pos(s)+1);
@@ -1990,6 +1987,14 @@ static int Lpb_decode(lua_State *L) {
             lpb_checkslice(L, 2), 3);
 }
 
+static int Lpb_share_state(lua_State* L) {
+    if (NULL != global_state) {
+        return luaL_error(L, "already share pb state");
+    }
+    lpb_State* LS = lpb_lstate(L);
+    global_state = &LS->local;
+    return 0;
+}
 
 void lpb_pushunpackdef(lua_State* L, lpb_State* LS, const pb_Type* t, pb_Field** l, int top) {
     unsigned int i;
@@ -2125,6 +2130,7 @@ LUALIB_API int luaopen_pb(lua_State *L) {
         ENTRY(result),
         ENTRY(option),
         ENTRY(state),
+        ENTRY(share_state),
         ENTRY(pack),
         ENTRY(unpack),
 #undef  ENTRY

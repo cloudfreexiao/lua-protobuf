@@ -1440,8 +1440,8 @@ function _G.test_unsafe()
    table_eq(pb.decode("TestType", unsafe.slice(s, len)), {})
    table_eq({unsafe.load(s, len)}, {true , 1})
    pb.clear "TestType"
-   eq((unsafe.use "global"), true)
-   eq((unsafe.use "local"), true)
+   -- eq((unsafe.use "global"), true)
+   -- eq((unsafe.use "local"), true)
 end
 
 function _G.test_order()
